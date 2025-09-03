@@ -1,0 +1,46 @@
+#include <Arduino.h>
+#include <SCServo.h>  // FEETECH用ライブラリ
+
+SCSCL sts;  // 通信用インスタンス
+
+// 各サーボのID
+const byte servo1_ID = 1;
+const byte servo2_ID = 2;
+
+// 振幅と周期を変えて動かすための変数
+float rad1 = 0.0;
+float rad2 = PI;  // πずらして逆位相にする
+const float amp = 500;         // 中心からの振幅
+const int center = 2048;       // 中立位置（パルス値）
+const float step = 0.05;       // ラジアンの増分
+
+void setup() {
+  Serial.begin(9600);             // デバッグ用
+  Serial1.begin(1000000);           // サーボ通信用
+  sts.pSerial = &Serial1;           // Serial1を割り当て
+  delay(500);
+  Serial.println("Start Dual Servo Motion");
+}
+
+void loop() {
+  // 各サーボの目標位置を計算
+  int pos1 = center + int(amp * sin(rad1));
+  int pos2 = center + int(amp * sin(rad2));
+
+  // サーボ1に位置指令
+  sts.WritePos(servo1_ID, pos1, 0, 0);
+
+  // サーボ2に位置指令
+  sts.WritePos(servo2_ID, pos2, 0, 0);
+
+  // デバッグ出力
+  Serial.print("Servo1: "); Serial.print(pos1);
+  Serial.print(" | Servo2: "); Serial.println(pos2);
+
+  // ラジアン更新
+  rad1 += step;
+  rad2 += step;
+
+  // 待機
+  delay(20);  // 20ms周期（50Hz）
+}

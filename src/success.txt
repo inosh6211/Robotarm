@@ -1,0 +1,56 @@
+/// 最初にうまくいったコード(UARTはpa9tx,pa10rx)
+#include <Arduino.h>
+#include <SCServo.h> // SCServoライブラリをインクルード
+
+// ライブラリのインスタンスを作成
+SCSCL sts;
+
+// --- サーボ設定 ---
+const byte servoID = 1;
+int centerPosition = 2048;
+int goalPosition = 0;
+float radiansval = 0.0;
+float radiansIncrement = 0.06;
+float maxPosition = 1600;
+
+// --- シリアルモニターへの送信タイミングを管理する変数 ---
+unsigned long lastPrintTime = 0;
+const long printInterval = 500;
+
+void setup() {
+  // PCとの通信用 (9600 bps)
+  Serial.begin(9600);
+  delay(100);
+  Serial.println("STM32 Servo Control Start (Using SCServo Library on Serial1)");
+
+  // サーボとの通信用 (1,000,000 bps)
+  Serial1.begin(1000000);
+  // ライブラリが使用するシリアルポートをSerial1に設定
+  sts.pSerial = &Serial1;
+}
+
+void loop() {
+  // 1. サーボの目標位置を計算
+  radiansval += radiansIncrement;
+  if (radiansval > 2 * PI) {
+    radiansval -= 2 * PI;
+  }
+  goalPosition = centerPosition + (int)(maxPosition * sin(radiansval));
+
+  // 2. ライブラリの関数を使ってサーボに位置を送信
+  // sts.WritePos(ID, Position, Time, Speed)
+  // TimeとSpeedを0にすると、最高速で動きます
+  sts.WritePos(servoID, goalPosition, 0, 0);
+
+  // 3. PCへの情報送信は、500ミリ秒ごとに実行
+  unsigned long currentTime = millis();
+  if (currentTime - lastPrintTime >= printInterval) {
+    lastPrintTime = currentTime;
+    Serial.print("Goal Position: ");
+    Serial.println(goalPosition);
+  }
+
+  // 4. 20ミリ秒待機
+  delay(20);
+}
+

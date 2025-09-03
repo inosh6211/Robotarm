@@ -1,0 +1,30 @@
+#include <Arduino.h>
+#include <SCServo.h>
+
+SMS_STS sms_sts;
+
+// STM32 の TX: PA9, RX: PA10（例: USART1）
+HardwareSerial mySerial(PA9, PA10);
+
+void setup() {
+  Serial.begin(115200);      // PCとの通信用（デバッグ）
+  mySerial.begin(1000000);   // サーボ通信速度（1Mbps）
+  sms_sts.pSerial = &mySerial;
+
+  delay(1000);
+
+  sms_sts.WritePosEx(1, 600, 0, 254);  // 角度指令
+}
+
+void loop() {
+  int pos = 0;
+  if (sms_sts.FeedBack(1) != -1) {
+    pos = sms_sts.ReadPos(-1);
+    Serial.print("POS:");
+    Serial.println(pos);
+  } else {
+    Serial.println("FeedBack error");
+  }
+
+  delay(1000);
+}
